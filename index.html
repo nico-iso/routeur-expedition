@@ -229,8 +229,10 @@
 
                 if (routeData.code !== 'Ok') throw new Error("Impossible d'optimiser le trajet.");
 
-                const waypointOrder = routeData.waypoints.sort((a, b) => a.waypoint_index - b.waypoint_index);
-                const orderedCoords = waypointOrder.map(wp => coords[wp.trips_index]);
+                // Correction du tri des points de passage selon l'optimisation OSRM
+                const orderedCoords = routeData.waypoints
+                    .sort((a, b) => a.waypoint_index - b.waypoint_index)
+                    .map(wp => coords[wp.trips_index]);
 
                 displayResults(orderedCoords, routeData.trips[0]);
                 autoSaveRoute(startAddr, endAddr, stopInputs);
