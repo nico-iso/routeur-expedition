@@ -23,12 +23,13 @@
             </p>
         </div>
 
-        <!-- Historique des routes -->
+        <!-- Historique des routes et Partage -->
         <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-3">
             <div class="flex justify-between items-center">
-                <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">📁 Anciennes routes enregistrées</label>
+                <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">📁 Routes enregistrées & Partage</label>
                 <button onclick="clearHistory()" class="text-xs text-rose-400 hover:underline">Vider l'historique</button>
             </div>
+            
             <div class="flex gap-2">
                 <select id="historySelect" onchange="loadSelectedRoute()" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500">
                     <option value="">-- Sélectionner une route enregistrée --</option>
@@ -36,6 +37,17 @@
                 <button onclick="saveCurrentRoutePrompt()" class="bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-sm text-slate-200 font-medium transition">
                     💾 Enregistrer
                 </button>
+            </div>
+
+            <!-- Boutons d'export / import pour le partage réseau -->
+            <div class="flex gap-2 pt-2 border-t border-slate-700/50">
+                <button onclick="exportRoutes()" class="flex-1 bg-slate-900 hover:bg-slate-700 border border-slate-700 py-1.5 px-3 rounded-lg text-xs text-slate-300 transition flex items-center justify-center gap-1">
+                    <span>📤</span> Exporter les routes (Fichier)
+                </button>
+                <label class="flex-1 bg-slate-900 hover:bg-slate-700 border border-slate-700 py-1.5 px-3 rounded-lg text-xs text-slate-300 transition flex items-center justify-center gap-1 cursor-pointer">
+                    <span>📥</span> Importer des routes
+                    <input type="file" id="importFile" accept=".json" onchange="importRoutes(event)" class="hidden">
+                </label>
             </div>
         </div>
 
@@ -245,7 +257,6 @@
 
                     if (routeData.code !== 'Ok') throw new Error("Impossible d'optimiser le trajet.");
 
-                    // CORRECTION ICI : Utilisation de l'index du tableau de waypoints (originalIndex)
                     orderedCoords = routeData.waypoints
                         .map((wp, originalIndex) => ({ ...wp, originalIndex }))
                         .sort((a, b) => a.waypoint_index - b.waypoint_index)
@@ -365,6 +376,39 @@
                 localStorage.removeItem('routes_history');
                 updateHistoryDropdown();
             }
+        }
+
+        // Fonctions d'export et d'import pour partager entre postes
+        function exportRoutes() {
+            const data = localStorage.getItem('routes_history') || '[]';
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'routes-isothermic.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importRoutes(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedRoutes = JSON.parse(e.target.result);
+                    if (Array.isArray(importedRoutes)) {
+                        localStorage.setItem('routes_history', JSON.stringify(importedRoutes));
+                        updateHistoryDropdown();
+                        alert("Routes importées avec succès !");
+                    } else {
+                        alert("Format de fichier invalide.");
+                    }
+                } catch (err) {
+                    alert("Erreur lors de la lecture du fichier.");
+                }
+            };
+            reader.readAsText(file);
         }
 
         updateHistoryDropdown();
