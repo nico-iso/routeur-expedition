@@ -3,476 +3,346 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Optimiseur de Livraisons</title>
+    <title>Optimiseur de Livraisons - Isothermic</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        :root {
-            --primary: #2563eb;
-            --primary-hover: #1d4ed8;
-            --bg: #f8fafc;
-            --card: #ffffff;
-            --text: #0f172a;
-            --border: #e2e8f0;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            margin: 0;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 700px;
-            margin: 0 auto;
-            background: var(--card);
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-
-        h1 { margin-top: 0; color: var(--primary); font-size: 1.5rem; }
-        .section-title { font-weight: 600; margin: 15px 0 8px 0; font-size: 0.95rem; color: #475569; }
-
-        .input-group {
-            position: relative;
-            margin-bottom: 12px;
-        }
-
-        .input-row {
-            display: flex;
-            gap: 8px;
-        }
-
-        input[type="text"] {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            font-size: 0.95rem;
-            box-sizing: border-box;
-        }
-
-        input[type="text"]:focus {
-            outline: none;
-            border-color: var(--primary);
-        }
-
-        /* Suggestions d'adresses */
-        .suggestions-list {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: white;
-            border: 1px solid var(--border);
-            border-radius: 0 0 6px 6px;
-            max-height: 180px;
-            overflow-y: auto;
-            z-index: 1000;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-
-        .suggestion-item {
-            padding: 8px 12px;
-            cursor: pointer;
-            font-size: 0.85rem;
-            border-bottom: 1px solid #f1f5f9;
-        }
-
         .suggestion-item:hover {
-            background-color: #eff6ff;
-            color: var(--primary);
-        }
-
-        button {
-            cursor: pointer;
-            padding: 10px 16px;
-            border: none;
-            border-radius: 6px;
-            font-weight: 500;
-            transition: background-color 0.2s;
-        }
-
-        .btn-primary { background: var(--primary); color: white; width: 100%; font-size: 1rem; padding: 12px; margin-top: 10px; }
-        .btn-primary:hover { background: var(--primary-hover); }
-        .btn-secondary { background: #e2e8f0; color: #334155; }
-        .btn-secondary:hover { background: #cbd5e1; }
-        .btn-danger { background: #fee2e2; color: #dc2626; padding: 0 12px; }
-        .btn-danger:hover { background: #fecaca; }
-
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin: 15px 0;
-            font-size: 0.9rem;
-        }
-
-        .history-box {
-            margin-bottom: 20px;
-            background: #f1f5f9;
-            padding: 12px;
-            border-radius: 8px;
-        }
-
-        .history-select {
-            width: 100%;
-            padding: 8px;
-            border-radius: 6px;
-            border: 1px solid var(--border);
-            margin-bottom: 8px;
-            font-size: 0.9rem;
-        }
-
-        #results {
-            margin-top: 25px;
-            border-top: 2px solid var(--bg);
-            padding-top: 20px;
-            display: none;
-        }
-
-        .waypoint-list {
-            list-style: none;
-            padding: 0;
-            margin: 15px 0;
-        }
-
-        .waypoint-item {
-            padding: 8px 12px;
-            background: #f8fafc;
-            border: 1px solid var(--border);
-            margin-bottom: 6px;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            display: flex;
-            gap: 10px;
-        }
-
-        .badge {
-            background: var(--primary);
-            color: white;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.75rem;
-            font-weight: bold;
-            flex-shrink: 0;
-        }
-
-        #qrcode {
-            display: flex;
-            justify-content: center;
-            margin: 20px 0;
-        }
-
-        .loader {
-            display: none;
-            text-align: center;
-            margin: 15px 0;
-            color: var(--primary);
-            font-weight: 500;
+            background-color: #f3f4f6;
         }
     </style>
 </head>
-<body>
-
-<div class="container">
-    <h1>🚛 Optimiseur de Livraisons</h1>
-
-    <!-- Historique des routes -->
-    <div class="history-box">
-        <div class="section-title" style="margin-top: 0;">📁 Charger une ancienne route :</div>
-        <select id="historySelect" class="history-select" onchange="loadSelectedRoute()">
-            <option value="">-- Sélectionner une route enregistrée --</option>
-        </select>
-        <div style="display: flex; gap: 8px;">
-            <button class="btn-secondary" style="flex: 1; font-size: 0.85rem;" onclick="saveCurrentRoutePrompt()">💾 Sauvegarder la route actuelle</button>
-            <button class="btn-danger" style="font-size: 0.85rem;" onclick="clearHistory()">Vider l'historique</button>
-        </div>
-    </div>
-
-    <!-- Saisie du trajet -->
-    <div class="section-title">Point de départ</div>
-    <div class="input-group">
-        <input type="text" id="start" placeholder="Entrez le point de départ" oninput="handleAutocomplete(this)">
-        <div class="suggestions-list"></div>
-    </div>
-
-    <div class="section-title">Adresses de livraison</div>
-    <div id="stopsContainer">
-        <div class="input-group">
-            <div class="input-row">
-                <input type="text" class="stop-input" placeholder="Adresse de livraison 1" oninput="handleAutocomplete(this)">
-                <button class="btn-danger" onclick="removeStop(this)">✕</button>
-            </div>
-            <div class="suggestions-list"></div>
-        </div>
-    </div>
-
-    <button class="btn-secondary" style="width: 100%; margin-top: 5px;" onclick="addStopInput()">+ Ajouter une adresse</button>
-
-    <div class="section-title">Point d'arrivée</div>
-    <div class="input-group">
-        <input type="text" id="end" placeholder="Entrez le point d'arrivée" oninput="handleAutocomplete(this)">
-        <div class="suggestions-list"></div>
-    </div>
-
-    <div class="checkbox-group">
-        <input type="checkbox" id="returnToStart" onchange="toggleReturnToStart(this)">
-        <label for="returnToStart">Retourner au point de départ à la fin</label>
-    </div>
-
-    <button class="btn-primary" onclick="processRoute()">⚡ Calculer la route optimale</button>
-    <div class="loader" id="loader">Calcul et optimisation du trajet en cours...</div>
-
-    <!-- Résultats -->
-    <div id="results">
-        <h3>Ordre de livraison optimisé :</h3>
-        <ol class="waypoint-list" id="orderedList"></ol>
-        <p id="routeMeta" style="font-weight: 500; color: #475569;"></p>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-4 md:p-8">
+    <div class="max-w-2xl mx-auto space-y-6">
         
-        <a id="gmapsLink" href="#" target="_blank" style="text-decoration: none;">
-            <button class="btn-primary" style="background: #16a34a;">📱 Ouvrir dans Google Maps</button>
-        </a>
-
-        <div style="text-align: center; margin-top: 20px;">
-            <p style="font-size: 0.85rem; color: #64748b;">Scannez ce QR Code avec le téléphone du livreur :</p>
-            <div id="qrcode"></div>
+        <!-- En-tête -->
+        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-xl">
+            <h1 class="text-2xl font-bold text-blue-400 flex items-center gap-2">
+                <span>🚛</span> Optimiseur de Route de Livraison
+            </h1>
+            <p class="text-slate-400 text-sm mt-1">
+                Calculez l'itinéraire le plus rapide et générez le trajet direct pour Google Maps.
+            </p>
         </div>
-    </div>
-</div>
 
-<script>
-    let autocompleteTimeout;
-
-    // --- Autocomplétion d'adresses (Nominatim / OpenStreetMap) ---
-    function handleAutocomplete(inputElement) {
-        clearTimeout(autocompleteTimeout);
-        const container = inputElement.parentElement.classList.contains('input-row') 
-            ? inputElement.parentElement.parentElement 
-            : inputElement.parentElement;
-        const listDiv = container.querySelector('.suggestions-list');
-        const query = inputElement.value.trim();
-
-        if (query.length < 3) {
-            listDiv.innerHTML = '';
-            return;
-        }
-
-        autocompleteTimeout = setTimeout(async () => {
-            try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&countrycodes=ca`);
-                const data = await res.json();
-                listDiv.innerHTML = '';
-                
-                data.forEach(item => {
-                    const div = document.createElement('div');
-                    div.className = 'suggestion-item';
-                    div.innerText = item.display_name;
-                    div.onclick = () => {
-                        inputElement.value = item.display_name;
-                        listDiv.innerHTML = '';
-                    };
-                    listDiv.appendChild(div);
-                });
-            } catch (e) {
-                console.error("Erreur autocomplétion:", e);
-            }
-        }, 300);
-    }
-
-    // Fermer les suggestions si on clique ailleurs
-    document.addEventListener('click', (e) => {
-        if (!e.target.matches('input[type="text"]')) {
-            document.querySelectorAll('.suggestions-list').forEach(el => el.innerHTML = '');
-        }
-    });
-
-    // --- Gestion des entrées ---
-    function addStopInput(value = '') {
-        const container = document.getElementById('stopsContainer');
-        const div = document.createElement('div');
-        div.className = 'input-group';
-        div.innerHTML = `
-            <div class="input-row">
-                <input type="text" class="stop-input" placeholder="Adresse de livraison" value="${value}" oninput="handleAutocomplete(this)">
-                <button class="btn-danger" onclick="removeStop(this)">✕</button>
+        <!-- Historique des routes -->
+        <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-3">
+            <div class="flex justify-between items-center">
+                <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">📁 Anciennes routes enregistrées</label>
+                <button onclick="clearHistory()" class="text-xs text-rose-400 hover:underline">Vider l'historique</button>
             </div>
-            <div class="suggestions-list"></div>
-        `;
-        container.appendChild(div);
-    }
+            <div class="flex gap-2">
+                <select id="historySelect" onchange="loadSelectedRoute()" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+                    <option value="">-- Sélectionner une route enregistrée --</option>
+                </select>
+                <button onclick="saveCurrentRoutePrompt()" class="bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-sm text-slate-200 font-medium transition">
+                    💾 Enregistrer
+                </button>
+            </div>
+        </div>
 
-    function removeStop(btn) {
-        const container = document.getElementById('stopsContainer');
-        if (container.children.length > 1) {
-            btn.closest('.input-group').remove();
+        <!-- Formulaire principal -->
+        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-xl space-y-4">
+            
+            <!-- Point de départ -->
+            <div class="relative">
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Point de Départ (ex: Usine)</label>
+                <input type="text" id="start" placeholder="Entrez le point de départ" oninput="handleAutocomplete(this)"
+                    class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-100 focus:outline-none focus:border-blue-500">
+                <div class="suggestions-list absolute left-0 right-0 top-full mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl max-h-48 overflow-y-auto z-50 divide-y divide-slate-700"></div>
+            </div>
+
+            <!-- Adresses de livraison -->
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Adresses de livraison</label>
+                <div id="stopsContainer" class="space-y-2">
+                    <div class="relative stop-group">
+                        <div class="flex gap-2">
+                            <input type="text" class="stop-input flex-1 bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-100 focus:outline-none focus:border-blue-500" 
+                                placeholder="Adresse de livraison 1" oninput="handleAutocomplete(this)">
+                            <button onclick="removeStop(this)" class="bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 px-3 rounded-lg transition">✕</button>
+                        </div>
+                        <div class="suggestions-list absolute left-0 right-0 top-full mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl max-h-48 overflow-y-auto z-50 divide-y divide-slate-700"></div>
+                    </div>
+                </div>
+                
+                <button onclick="addStopInput()" class="mt-3 w-full border border-dashed border-slate-600 text-slate-300 hover:bg-slate-700/50 py-2.5 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2">
+                    <span>+</span> Ajouter une adresse
+                </button>
+            </div>
+
+            <!-- Point d'arrivée -->
+            <div class="relative">
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Point d'Arrivée Finale</label>
+                <input type="text" id="end" placeholder="Entrez le point d'arrivée" oninput="handleAutocomplete(this)"
+                    class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-100 focus:outline-none focus:border-blue-500">
+                <div class="suggestions-list absolute left-0 right-0 top-full mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl max-h-48 overflow-y-auto z-50 divide-y divide-slate-700"></div>
+            </div>
+
+            <!-- Case à cocher Retour -->
+            <div class="flex items-center gap-2 pt-1">
+                <input type="checkbox" id="returnToStart" onchange="toggleReturnToStart(this)" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-blue-500 focus:ring-blue-500 focus:ring-offset-slate-800">
+                <label for="returnToStart" class="text-sm text-slate-300 cursor-pointer">Retourner au point de départ à la fin de la tournée</label>
+            </div>
+
+            <!-- Bouton Calculer -->
+            <button onclick="processRoute()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 rounded-lg shadow-lg shadow-blue-600/30 transition duration-200">
+                Calculer la Route Optimisée
+            </button>
+        </div>
+
+        <!-- Loader -->
+        <div id="loader" class="hidden bg-slate-800 p-6 rounded-xl border border-slate-700 text-center text-blue-400 font-medium animate-pulse">
+            Calcul de l'itinéraire optimal en cours...
+        </div>
+
+        <!-- Zone de Résultats -->
+        <div id="results" class="hidden bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-xl space-y-6">
+            <h2 class="text-lg font-bold text-slate-100 border-b border-slate-700 pb-2">Ordre de Livraison Optimisé</h2>
+            
+            <ol id="orderedList" class="space-y-2"></ol>
+            
+            <div id="routeMeta" class="text-sm text-slate-400 bg-slate-900/50 p-3 rounded-lg border border-slate-700/50"></div>
+
+            <a id="gmapsLink" href="#" target="_blank" class="block w-full">
+                <button class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-lg shadow-lg shadow-emerald-600/30 transition duration-200 flex items-center justify-center gap-2">
+                    <span>📱</span> Ouvrir dans Google Maps
+                </button>
+            </a>
+
+            <div class="text-center pt-2">
+                <p class="text-xs text-slate-400 mb-3">Scannez le QR Code avec le téléphone du livreur :</p>
+                <div id="qrcode" class="bg-white p-3 rounded-xl inline-block shadow-lg"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let autocompleteTimeout;
+
+        function handleAutocomplete(inputElement) {
+            clearTimeout(autocompleteTimeout);
+            const group = inputElement.closest('.relative');
+            const listDiv = group.querySelector('.suggestions-list');
+            const query = inputElement.value.trim();
+
+            if (query.length < 3) {
+                listDiv.innerHTML = '';
+                return;
+            }
+
+            autocompleteTimeout = setTimeout(async () => {
+                try {
+                    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&countrycodes=ca`);
+                    const data = await res.json();
+                    listDiv.innerHTML = '';
+                    
+                    data.forEach(item => {
+                        const div = document.createElement('div');
+                        div.className = 'suggestion-item px-4 py-2 text-xs text-slate-200 cursor-pointer transition';
+                        div.innerText = item.display_name;
+                        div.onclick = () => {
+                            inputElement.value = item.display_name;
+                            listDiv.innerHTML = '';
+                        };
+                        listDiv.appendChild(div);
+                    });
+                } catch (e) {
+                    console.error(e);
+                }
+            }, 300);
         }
-    }
 
-    function toggleReturnToStart(checkbox) {
-        const endInput = document.getElementById('end');
-        if (checkbox.checked) {
-            endInput.value = document.getElementById('start').value;
-            endInput.disabled = true;
-        } else {
-            endInput.disabled = false;
-        }
-    }
-
-    // --- Géocodage et Routage ---
-    async function geocode(address) {
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`);
-        const data = await res.json();
-        if (!data || data.length === 0) throw new Error(`Adresse introuvable : ${address}`);
-        return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon), name: address };
-    }
-
-    async function processRoute() {
-        const startAddr = document.getElementById('start').value.trim();
-        const endAddr = document.getElementById('end').value.trim();
-        const stopInputs = Array.from(document.querySelectorAll('.stop-input')).map(i => i.value.trim()).filter(v => v !== '');
-
-        if (!startAddr || !endAddr || stopInputs.length === 0) {
-            alert("Veuillez remplir le départ, l'arrivée et au moins une adresse de livraison.");
-            return;
-        }
-
-        document.getElementById('loader').style.display = 'block';
-        document.getElementById('results').style.display = 'none';
-
-        try {
-            const allAddresses = [startAddr, ...stopInputs, endAddr];
-            const coords = await Promise.all(allAddresses.map(geocode));
-
-            const osrmCoords = coords.map(c => `${c.lon},${c.lat}`).join(';');
-            const osrmUrl = `https://router.project-osrm.org/trip/v1/driving/${osrmCoords}?source=first&destination=last&roundtrip=false`;
-
-            const routeRes = await fetch(osrmUrl);
-            const routeData = await routeRes.json();
-
-            if (routeData.code !== 'Ok') throw new Error("Impossible d'optimiser le trajet.");
-
-            const waypointOrder = routeData.waypoints.sort((a, b) => a.waypoint_index - b.waypoint_index);
-            const orderedCoords = waypointOrder.map(wp => coords[wp.trips_index]);
-
-            displayResults(orderedCoords, routeData.trips[0]);
-            autoSaveRoute(startAddr, endAddr, stopInputs);
-        } catch (err) {
-            alert("Erreur : " + err.message);
-        } finally {
-            document.getElementById('loader').style.display = 'none';
-        }
-    }
-
-    function displayResults(orderedPoints, tripData) {
-        const listEl = document.getElementById('orderedList');
-        listEl.innerHTML = '';
-
-        orderedPoints.forEach((pt, index) => {
-            const li = document.createElement('li');
-            li.className = 'waypoint-item';
-            let label = index === 0 ? 'Départ' : (index === orderedPoints.length - 1 ? 'Arrivée' : `Arrêt ${index}`);
-            li.innerHTML = `<span class="badge">${index + 1}</span> <strong>${label}:</strong> ${pt.name}`;
-            listEl.appendChild(li);
+        document.addEventListener('click', (e) => {
+            if (!e.target.matches('input[type="text"]')) {
+                document.querySelectorAll('.suggestions-list').forEach(el => el.innerHTML = '');
+            }
         });
 
-        const distKm = (tripData.distance / 1000).toFixed(1);
-        const durationMin = Math.round(tripData.duration / 60);
-        document.getElementById('routeMeta').innerText = `Distance approx. : ${distKm} km | Temps estimé : ${durationMin} min`;
-
-        const origin = encodeURIComponent(orderedPoints[0].name);
-        const destination = encodeURIComponent(orderedPoints[orderedPoints.length - 1].name);
-        const waypoints = orderedPoints.slice(1, -1).map(p => encodeURIComponent(p.name)).join('|');
-        const gmapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&waypoints=${waypoints}&travelmode=driving`;
-
-        document.getElementById('gmapsLink').href = gmapsUrl;
-
-        document.getElementById('qrcode').innerHTML = '';
-        new QRCode(document.getElementById("qrcode"), {
-            text: gmapsUrl,
-            width: 160,
-            height: 160
-        });
-
-        document.getElementById('results').style.display = 'block';
-    }
-
-    // --- Historique (LocalStorage) ---
-    function getSavedRoutes() {
-        return JSON.parse(localStorage.getItem('routes_history') || '[]');
-    }
-
-    function updateHistoryDropdown() {
-        const select = document.getElementById('historySelect');
-        select.innerHTML = '<option value="">-- Sélectionner une route enregistrée --</option>';
-        const routes = getSavedRoutes();
-        routes.forEach((r, idx) => {
-            const opt = document.createElement('option');
-            opt.value = idx;
-            opt.innerText = `${r.name} (${r.stops.length} livraisons)`;
-            select.appendChild(opt);
-        });
-    }
-
-    function saveCurrentRoutePrompt() {
-        const start = document.getElementById('start').value.trim();
-        const end = document.getElementById('end').value.trim();
-        const stops = Array.from(document.querySelectorAll('.stop-input')).map(i => i.value.trim()).filter(v => v !== '');
-
-        if (!start || stops.length === 0) {
-            alert("Remplissez au moins le point de départ et une adresse à sauvegarder.");
-            return;
+        function addStopInput(value = '') {
+            const container = document.getElementById('stopsContainer');
+            const div = document.createElement('div');
+            div.className = 'relative stop-group';
+            div.innerHTML = `
+                <div class="flex gap-2">
+                    <input type="text" class="stop-input flex-1 bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-100 focus:outline-none focus:border-blue-500" 
+                        placeholder="Adresse de livraison" value="${value}" oninput="handleAutocomplete(this)">
+                    <button onclick="removeStop(this)" class="bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 px-3 rounded-lg transition">✕</button>
+                </div>
+                <div class="suggestions-list absolute left-0 right-0 top-full mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl max-h-48 overflow-y-auto z-50 divide-y divide-slate-700"></div>
+            `;
+            container.appendChild(div);
         }
 
-        const name = prompt("Donnez un nom à cette route :", `Route du ${new Date().toLocaleDateString()}`);
-        if (!name) return;
+        function removeStop(btn) {
+            const container = document.getElementById('stopsContainer');
+            if (container.children.length > 1) {
+                btn.closest('.stop-group').remove();
+            }
+        }
 
-        const routes = getSavedRoutes();
-        routes.unshift({ name, start, end, stops });
-        localStorage.setItem('routes_history', JSON.stringify(routes.slice(0, 20))); // Max 20
-        updateHistoryDropdown();
-        alert("Route sauvegardée !");
-    }
+        function toggleReturnToStart(checkbox) {
+            const endInput = document.getElementById('end');
+            if (checkbox.checked) {
+                endInput.value = document.getElementById('start').value;
+                endInput.disabled = true;
+                endInput.classList.add('opacity-50');
+            } else {
+                endInput.disabled = false;
+                endInput.classList.remove('opacity-50');
+            }
+        }
 
-    function autoSaveRoute(start, end, stops) {
-        const routes = getSavedRoutes();
-        const name = `Dernière route (${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})})`;
-        routes.unshift({ name, start, end, stops });
-        localStorage.setItem('routes_history', JSON.stringify(routes.slice(0, 15)));
-        updateHistoryDropdown();
-    }
+        async function geocode(address) {
+            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`);
+            const data = await res.json();
+            if (!data || data.length === 0) throw new Error(`Adresse introuvable : ${address}`);
+            return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon), name: address };
+        }
 
-    function loadSelectedRoute() {
-        const idx = document.getElementById('historySelect').value;
-        if (idx === "") return;
+        async function processRoute() {
+            const startAddr = document.getElementById('start').value.trim();
+            const endAddr = document.getElementById('end').value.trim();
+            const stopInputs = Array.from(document.querySelectorAll('.stop-input')).map(i => i.value.trim()).filter(v => v !== '');
 
-        const route = getSavedRoutes()[idx];
-        if (!route) return;
+            if (!startAddr || !endAddr || stopInputs.length === 0) {
+                alert("Veuillez remplir le départ, l'arrivée et au moins une adresse de livraison.");
+                return;
+            }
 
-        document.getElementById('start').value = route.start;
-        document.getElementById('end').value = route.end;
+            document.getElementById('loader').classList.remove('hidden');
+            document.getElementById('results').classList.add('hidden');
 
-        const container = document.getElementById('stopsContainer');
-        container.innerHTML = '';
-        route.stops.forEach(s => addStopInput(s));
-    }
+            try {
+                const allAddresses = [startAddr, ...stopInputs, endAddr];
+                const coords = await Promise.all(allAddresses.map(geocode));
 
-    function clearHistory() {
-        if (confirm("Voulez-vous supprimer tout l'historique des routes ?")) {
-            localStorage.removeItem('routes_history');
+                const osrmCoords = coords.map(c => `${c.lon},${c.lat}`).join(';');
+                const osrmUrl = `https://router.project-osrm.org/trip/v1/driving/${osrmCoords}?source=first&destination=last&roundtrip=false`;
+
+                const routeRes = await fetch(osrmUrl);
+                const routeData = await routeRes.json();
+
+                if (routeData.code !== 'Ok') throw new Error("Impossible d'optimiser le trajet.");
+
+                const waypointOrder = routeData.waypoints.sort((a, b) => a.waypoint_index - b.waypoint_index);
+                const orderedCoords = waypointOrder.map(wp => coords[wp.trips_index]);
+
+                displayResults(orderedCoords, routeData.trips[0]);
+                autoSaveRoute(startAddr, endAddr, stopInputs);
+            } catch (err) {
+                alert("Erreur : " + err.message);
+            } finally {
+                document.getElementById('loader').classList.add('hidden');
+            }
+        }
+
+        function displayResults(orderedPoints, tripData) {
+            const listEl = document.getElementById('orderedList');
+            listEl.innerHTML = '';
+
+            orderedPoints.forEach((pt, index) => {
+                const li = document.createElement('li');
+                li.className = 'flex items-start gap-3 bg-slate-900/60 p-3 rounded-lg border border-slate-700/60 text-sm';
+                let label = index === 0 ? 'Départ' : (index === orderedPoints.length - 1 ? 'Arrivée' : `Arrêt ${index}`);
+                li.innerHTML = `
+                    <span class="bg-blue-600 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5">${index + 1}</span>
+                    <div>
+                        <span class="font-semibold text-blue-300">${label} :</span> 
+                        <span class="text-slate-200">${pt.name}</span>
+                    </div>
+                `;
+                listEl.appendChild(li);
+            });
+
+            const distKm = (tripData.distance / 1000).toFixed(1);
+            const durationMin = Math.round(tripData.duration / 60);
+            document.getElementById('routeMeta').innerText = `Distance estimée : ${distKm} km  |  Temps de route : ~${durationMin} min`;
+
+            const origin = encodeURIComponent(orderedPoints[0].name);
+            const destination = encodeURIComponent(orderedPoints[orderedPoints.length - 1].name);
+            const waypoints = orderedPoints.slice(1, -1).map(p => encodeURIComponent(p.name)).join('|');
+            const gmapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&waypoints=${waypoints}&travelmode=driving`;
+
+            document.getElementById('gmapsLink').href = gmapsUrl;
+
+            document.getElementById('qrcode').innerHTML = '';
+            new QRCode(document.getElementById("qrcode"), {
+                text: gmapsUrl,
+                width: 150,
+                height: 150
+            });
+
+            document.getElementById('results').classList.remove('hidden');
+        }
+
+        function getSavedRoutes() {
+            return JSON.parse(localStorage.getItem('routes_history') || '[]');
+        }
+
+        function updateHistoryDropdown() {
+            const select = document.getElementById('historySelect');
+            select.innerHTML = '<option value="">-- Sélectionner une route enregistrée --</option>';
+            const routes = getSavedRoutes();
+            routes.forEach((r, idx) => {
+                const opt = document.createElement('option');
+                opt.value = idx;
+                opt.innerText = `${r.name} (${r.stops.length} livraisons)`;
+                select.appendChild(opt);
+            });
+        }
+
+        function saveCurrentRoutePrompt() {
+            const start = document.getElementById('start').value.trim();
+            const end = document.getElementById('end').value.trim();
+            const stops = Array.from(document.querySelectorAll('.stop-input')).map(i => i.value.trim()).filter(v => v !== '');
+
+            if (!start || stops.length === 0) {
+                alert("Remplissez au moins le point de départ et une adresse à sauvegarder.");
+                return;
+            }
+
+            const name = prompt("Donnez un nom à cette route :", `Route du ${new Date().toLocaleDateString()}`);
+            if (!name) return;
+
+            const routes = getSavedRoutes();
+            routes.unshift({ name, start, end, stops });
+            localStorage.setItem('routes_history', JSON.stringify(routes.slice(0, 20)));
             updateHistoryDropdown();
         }
-    }
 
-    // Charger l'historique au démarrage
-    updateHistoryDropdown();
-</script>
+        function autoSaveRoute(start, end, stops) {
+            const routes = getSavedRoutes();
+            const name = `Dernière route (${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})})`;
+            routes.unshift({ name, start, end, stops });
+            localStorage.setItem('routes_history', JSON.stringify(routes.slice(0, 15)));
+            updateHistoryDropdown();
+        }
 
+        function loadSelectedRoute() {
+            const idx = document.getElementById('historySelect').value;
+            if (idx === "") return;
+
+            const route = getSavedRoutes()[idx];
+            if (!route) return;
+
+            document.getElementById('start').value = route.start;
+            document.getElementById('end').value = route.end;
+
+            const container = document.getElementById('stopsContainer');
+            container.innerHTML = '';
+            route.stops.forEach(s => addStopInput(s));
+        }
+
+        function clearHistory() {
+            if (confirm("Voulez-vous supprimer tout l'historique des routes ?")) {
+                localStorage.removeItem('routes_history');
+                updateHistoryDropdown();
+            }
+        }
+
+        updateHistoryDropdown();
+    </script>
 </body>
 </html>
