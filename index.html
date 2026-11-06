@@ -236,7 +236,6 @@
                     if (routeData.code !== 'Ok') throw new Error("Impossible de calculer l'itinéraire.");
                     tripData = routeData.routes[0];
                 } else {
-                    // Pour éviter que l'API /trip mélange les index, on envoie les points et on utilise les métadonnées de la réponse de manière sécure
                     const allPoints = [startCoord, ...stopCoords, endCoord];
                     const osrmCoords = allPoints.map(c => `${c.lon},${c.lat}`).join(';');
                     const osrmUrl = `https://router.project-osrm.org/trip/v1/driving/${osrmCoords}?source=first&destination=last&roundtrip=false`;
@@ -246,10 +245,11 @@
 
                     if (routeData.code !== 'Ok') throw new Error("Impossible d'optimiser le trajet.");
 
-                    // Reconstruction propre basée sur les indices de voyage retournés par OSRM
+                    // CORRECTION ICI : Utilisation de l'index du tableau de waypoints (originalIndex)
                     orderedCoords = routeData.waypoints
+                        .map((wp, originalIndex) => ({ ...wp, originalIndex }))
                         .sort((a, b) => a.waypoint_index - b.waypoint_index)
-                        .map(wp => allPoints[wp.trips_index]);
+                        .map(wp => allPoints[wp.originalIndex]);
 
                     tripData = routeData.trips[0];
                 }
@@ -337,7 +337,6 @@
             updateHistoryDropdown();
         }
 
-    
         function autoSaveRoute(start, end, stops) {
             const routes = getSavedRoutes();
             const name = `Dernière route (${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})})`;
