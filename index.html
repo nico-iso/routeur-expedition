@@ -3,479 +3,476 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Optimiseur de Route - Expédition</title>
-    <!-- Tailwind CSS pour un design moderne et réactif -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome pour les icônes -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- QR Code Generator -->
+    <title>Optimiseur de Livraisons</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .drag-handle { cursor: grab; }
-        .drag-handle:active { cursor: grabbing; }
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #0f172a;
+            --border: #e2e8f0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            background: var(--card);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 { margin-top: 0; color: var(--primary); font-size: 1.5rem; }
+        .section-title { font-weight: 600; margin: 15px 0 8px 0; font-size: 0.95rem; color: #475569; }
+
+        .input-group {
+            position: relative;
+            margin-bottom: 12px;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.95rem;
+            box-sizing: border-box;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        /* Suggestions d'adresses */
+        .suggestions-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 0 0 6px 6px;
+            max-height: 180px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .suggestion-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .suggestion-item:hover {
+            background-color: #eff6ff;
+            color: var(--primary);
+        }
+
+        button {
+            cursor: pointer;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+
+        .btn-primary { background: var(--primary); color: white; width: 100%; font-size: 1rem; padding: 12px; margin-top: 10px; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-secondary { background: #e2e8f0; color: #334155; }
+        .btn-secondary:hover { background: #cbd5e1; }
+        .btn-danger { background: #fee2e2; color: #dc2626; padding: 0 12px; }
+        .btn-danger:hover { background: #fecaca; }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 15px 0;
+            font-size: 0.9rem;
+        }
+
+        .history-box {
+            margin-bottom: 20px;
+            background: #f1f5f9;
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .history-select {
+            width: 100%;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        #results {
+            margin-top: 25px;
+            border-top: 2px solid var(--bg);
+            padding-top: 20px;
+            display: none;
+        }
+
+        .waypoint-list {
+            list-style: none;
+            padding: 0;
+            margin: 15px 0;
+        }
+
+        .waypoint-item {
+            padding: 8px 12px;
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            margin-bottom: 6px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            display: flex;
+            gap: 10px;
+        }
+
+        .badge {
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        #qrcode {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .loader {
+            display: none;
+            text-align: center;
+            margin: 15px 0;
+            color: var(--primary);
+            font-weight: 500;
+        }
     </style>
 </head>
-<body class="bg-slate-100 text-slate-800 min-h-screen pb-12">
+<body>
 
-    <!-- Entête de l'application -->
-    <header class="bg-indigo-700 text-white shadow-lg mb-8">
-        <div class="max-w-5xl mx-auto px-4 py-6 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-                <div class="p-3 bg-indigo-600 rounded-xl shadow-inner">
-                    <i class="fa-solid fa-truck-fast text-2xl"></i>
-                </div>
-                <div>
-                    <h1 class="text-2xl font-bold tracking-wide">Optimiseur de Tournée</h1>
-                    <p class="text-xs text-indigo-200">Module d'Expédition & Logistique (Sans clé API Google)</p>
-                </div>
-            </div>
-            <span class="hidden md:inline-flex items-center px-3 py-1 bg-indigo-800 text-indigo-200 text-xs font-semibold rounded-full">
-                <i class="fa-solid fa-bolt text-amber-400 mr-1.5"></i> Mode Rapide 100% Gratuit
-            </span>
-        </div>
-    </header>
+<div class="container">
+    <h1>🚛 Optimiseur de Livraisons</h1>
 
-    <main class="max-w-5xl mx-auto px-4">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            
-            <!-- FORMULAIRE DE SAISIE (COLONNE GAUCHE) -->
-            <div class="lg:col-span-7 space-y-6">
-                
-                <!-- Carte Point de Départ -->
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <h2 class="text-sm uppercase font-bold text-slate-400 mb-4 flex items-center">
-                        <i class="fa-solid fa-location-dot text-emerald-500 mr-2 text-base"></i> Point d'Origine
-                    </h2>
-                    <div>
-                        <label for="start-address" class="block text-xs font-medium text-slate-600 mb-1">Point de départ (ex: Entrepôt, Usine)</label>
-                        <div class="relative">
-                            <input type="text" id="start-address" placeholder="Ex: 1000 Rue de l'Entrepôt, Montréal, QC" 
-                                class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-sm">
-                            <i class="fa-solid fa-warehouse absolute left-3.5 top-3.5 text-slate-400 text-xs"></i>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Carte Adresses de Livraison -->
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-sm uppercase font-bold text-slate-400 flex items-center">
-                            <i class="fa-solid fa-boxes-packing text-indigo-500 mr-2 text-base"></i> Adresses de Livraison (<span id="stop-count">0</span>/10)
-                        </h2>
-                        <button type="button" id="clear-all-btn" class="text-xs text-rose-600 hover:text-rose-800 font-medium transition flex items-center">
-                            <i class="fa-solid fa-trash-can mr-1"></i> Tout effacer
-                        </button>
-                    </div>
-
-                    <div id="stops-container" class="space-y-3 mb-4">
-                        <!-- Les champs d'adresses dynamiques seront insérés ici par JS -->
-                    </div>
-
-                    <button type="button" id="add-stop-btn" class="w-full py-2.5 border-2 border-dashed border-indigo-200 text-indigo-600 hover:bg-indigo-50 rounded-xl font-medium text-sm transition flex items-center justify-center space-x-2">
-                        <i class="fa-solid fa-plus text-xs"></i>
-                        <span>Ajouter une adresse de livraison</span>
-                    </button>
-                </div>
-
-                <!-- Carte Destination Finale -->
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-sm uppercase font-bold text-slate-400 flex items-center">
-                            <i class="fa-solid fa-flag-checkered text-rose-500 mr-2 text-base"></i> Destination Finale
-                        </h2>
-                        <label class="inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="return-to-start" class="sr-only peer" checked>
-                            <div class="relative w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
-                            <span class="ml-2 text-xs font-medium text-slate-600">Retour au point de départ</span>
-                        </label>
-                    </div>
-                    <div id="end-address-wrapper" class="hidden">
-                        <label for="end-address" class="block text-xs font-medium text-slate-600 mb-1">Adresse d'arrivée finale</label>
-                        <div class="relative">
-                            <input type="text" id="end-address" placeholder="Ex: 5000 Rue de la Fin, Québec, QC" 
-                                class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-sm">
-                            <i class="fa-solid fa-location-dot absolute left-3.5 top-3.5 text-slate-400 text-xs"></i>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Bouton de Calcul principal -->
-                <button type="button" id="calculate-btn" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl shadow-lg shadow-indigo-200 transition duration-200 flex items-center justify-center space-x-2 text-base">
-                    <i class="fa-solid fa-wand-magic-sparkles"></i>
-                    <span>Calculer l'Itinéraire Optimisé</span>
-                </button>
-            </div>
-
-
-            <!-- RÉSULTATS & QR CODE (COLONNE DROITE) -->
-            <div class="lg:col-span-5 space-y-6">
-                
-                <!-- Boîte d'état initial (avant calcul) -->
-                <div id="empty-state" class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 text-center py-16">
-                    <div class="w-16 h-16 bg-indigo-50 text-indigo-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <i class="fa-solid fa-route text-2xl"></i>
-                    </div>
-                    <h3 class="text-base font-semibold text-slate-700 mb-1">Prêt pour l'optimisation</h3>
-                    <p class="text-xs text-slate-400 max-w-xs mx-auto">Entrez vos adresses à gauche et cliquez sur le bouton pour réordonner les étapes au plus court.</p>
-                </div>
-
-                <!-- Loader pendant le calcul -->
-                <div id="loader-state" class="hidden bg-white p-8 rounded-2xl shadow-sm border border-slate-200 text-center py-16">
-                    <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-indigo-600 border-t-transparent mb-4"></div>
-                    <h3 class="text-base font-semibold text-slate-700 mb-1">Géocodage & Optimisation...</h3>
-                    <p class="text-xs text-slate-400">Recherche de la meilleure séquence de livraison en cours.</p>
-                </div>
-
-                <!-- Zone de résultat (après calcul) -->
-                <div id="result-state" class="hidden space-y-6">
-                    
-                    <!-- Carte Récapitulative et Actions -->
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                        <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
-                            <div>
-                                <span class="text-xs font-semibold uppercase text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-md">
-                                    <i class="fa-solid fa-check mr-1"></i> Route Optimisée
-                                </span>
-                                <h3 class="text-lg font-bold text-slate-800 mt-2" id="total-stops-summary">0 Étapes au total</h3>
-                            </div>
-                        </div>
-
-                        <!-- Ordre des étapes réordonnées -->
-                        <div class="mb-6">
-                            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Ordre de Passage Suggéré :</h4>
-                            <ol id="optimized-list" class="space-y-2 relative border-l-2 border-indigo-100 ml-3 pl-4">
-                                <!-- Généré via JS -->
-                            </ol>
-                        </div>
-
-                        <!-- Bouton Google Maps Direct -->
-                        <a id="google-maps-link" href="#" target="_blank" rel="noopener noreferrer" 
-                           class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md transition flex items-center justify-center space-x-2 text-sm">
-                            <i class="fa-solid fa-map-location-dot"></i>
-                            <span>Ouvrir dans Google Maps</span>
-                            <i class="fa-solid fa-arrow-up-right-from-square text-xs ml-1"></i>
-                        </a>
-                    </div>
-
-                    <!-- Carte QR Code pour le chauffeur -->
-                    <div class="bg-indigo-900 text-white p-6 rounded-2xl shadow-lg text-center">
-                        <h4 class="text-sm font-bold tracking-wide uppercase text-indigo-200 mb-1">Scanner avec le Téléphone</h4>
-                        <p class="text-xs text-indigo-300 mb-4">Le livreur peut scanner ce QR code pour lancer l'itinéraire direct sur son application Google Maps.</p>
-                        
-                        <div class="bg-white p-4 rounded-xl inline-block shadow-inner mb-3">
-                            <div id="qrcode"></div>
-                        </div>
-                        
-                        <div class="text-[11px] text-indigo-300 flex items-center justify-center space-x-1">
-                            <i class="fa-solid fa-mobile-screen"></i>
-                            <span>Compatible iOS & Android</span>
-                        </div>
-                    </div>
-
-                </div>
-
-            </div>
-        </div>
-    </main>
-
-    <!-- Modal / Message Alert personnalisée -->
-    <div id="alert-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 hidden">
-        <div class="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl border border-slate-100">
-            <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mb-4">
-                <i class="fa-solid fa-triangle-exclamation text-xl"></i>
-            </div>
-            <h3 class="text-base font-bold text-slate-800 mb-2" id="alert-title">Attention</h3>
-            <p class="text-xs text-slate-500 mb-6" id="alert-message">Veuillez vérifier les informations saisies.</p>
-            <button type="button" onclick="closeAlert()" class="w-full py-2.5 bg-slate-800 text-white font-medium rounded-xl text-sm">Compris</button>
+    <!-- Historique des routes -->
+    <div class="history-box">
+        <div class="section-title" style="margin-top: 0;">📁 Charger une ancienne route :</div>
+        <select id="historySelect" class="history-select" onchange="loadSelectedRoute()">
+            <option value="">-- Sélectionner une route enregistrée --</option>
+        </select>
+        <div style="display: flex; gap: 8px;">
+            <button class="btn-secondary" style="flex: 1; font-size: 0.85rem;" onclick="saveCurrentRoutePrompt()">💾 Sauvegarder la route actuelle</button>
+            <button class="btn-danger" style="font-size: 0.85rem;" onclick="clearHistory()">Vider l'historique</button>
         </div>
     </div>
 
-    <script>
-        // État de l'application
-        const MAX_STOPS = 10;
-        let stopCount = 0;
+    <!-- Saisie du trajet -->
+    <div class="section-title">Point de départ</div>
+    <div class="input-group">
+        <input type="text" id="start" placeholder="Entrez le point de départ" oninput="handleAutocomplete(this)">
+        <div class="suggestions-list"></div>
+    </div>
 
-        // Éléments du DOM
-        const stopsContainer = document.getElementById('stops-container');
-        const addStopBtn = document.getElementById('add-stop-btn');
-        const clearAllBtn = document.getElementById('clear-all-btn');
-        const returnToStartCheckbox = document.getElementById('return-to-start');
-        const endAddressWrapper = document.getElementById('end-address-wrapper');
-        const stopCountSpan = document.getElementById('stop-count');
-        const calculateBtn = document.getElementById('calculate-btn');
+    <div class="section-title">Adresses de livraison</div>
+    <div id="stopsContainer">
+        <div class="input-group">
+            <div class="input-row">
+                <input type="text" class="stop-input" placeholder="Adresse de livraison 1" oninput="handleAutocomplete(this)">
+                <button class="btn-danger" onclick="removeStop(this)">✕</button>
+            </div>
+            <div class="suggestions-list"></div>
+        </div>
+    </div>
 
-        const emptyState = document.getElementById('empty-state');
-        const loaderState = document.getElementById('loader-state');
-        const resultState = document.getElementById('result-state');
-        const optimizedList = document.getElementById('optimized-list');
-        const totalStopsSummary = document.getElementById('total-stops-summary');
-        const googleMapsLink = document.getElementById('google-maps-link');
+    <button class="btn-secondary" style="width: 100%; margin-top: 5px;" onclick="addStopInput()">+ Ajouter une adresse</button>
 
-        // Initialisation avec 3 champs par défaut
-        window.addEventListener('DOMContentLoaded', () => {
-            addStopInput("1500 Rue Notre-Dame O, Montréal, QC");
-            addStopInput("500 Bd René-Lévesque O, Montréal, QC");
-            addStopInput("3000 Rue Rachel E, Montréal, QC");
-            document.getElementById('start-address').value = "7000 Boulevard Pie-IX, Montréal, QC";
-        });
+    <div class="section-title">Point d'arrivée</div>
+    <div class="input-group">
+        <input type="text" id="end" placeholder="Entrez le point d'arrivée" oninput="handleAutocomplete(this)">
+        <div class="suggestions-list"></div>
+    </div>
 
-        // Gestion de l'affichage du champ de destination finale
-        returnToStartCheckbox.addEventListener('change', (e) => {
-            if (e.target.checked) {
-                endAddressWrapper.classList.add('hidden');
-            } else {
-                endAddressWrapper.classList.remove('hidden');
-            }
-        });
+    <div class="checkbox-group">
+        <input type="checkbox" id="returnToStart" onchange="toggleReturnToStart(this)">
+        <label for="returnToStart">Retourner au point de départ à la fin</label>
+    </div>
 
-        // Ajouter un champ d'adresse de livraison
-        function addStopInput(value = '') {
-            if (stopCount >= MAX_STOPS) {
-                showAlert("Limite atteinte", `Vous ne pouvez pas ajouter plus de ${MAX_STOPS} adresses.`);
-                return;
-            }
+    <button class="btn-primary" onclick="processRoute()">⚡ Calculer la route optimale</button>
+    <div class="loader" id="loader">Calcul et optimisation du trajet en cours...</div>
 
-            stopCount++;
-            stopCountSpan.textContent = stopCount;
+    <!-- Résultats -->
+    <div id="results">
+        <h3>Ordre de livraison optimisé :</h3>
+        <ol class="waypoint-list" id="orderedList"></ol>
+        <p id="routeMeta" style="font-weight: 500; color: #475569;"></p>
+        
+        <a id="gmapsLink" href="#" target="_blank" style="text-decoration: none;">
+            <button class="btn-primary" style="background: #16a34a;">📱 Ouvrir dans Google Maps</button>
+        </a>
 
-            const div = document.createElement('div');
-            div.className = "flex items-center space-x-2 stop-item group animate-fadeIn";
-            div.innerHTML = `
-                <span class="w-6 text-center text-xs font-bold text-slate-400 group-hover:text-indigo-500">${stopCount}</span>
-                <div class="relative flex-1">
-                    <input type="text" class="stop-address w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-sm" 
-                           placeholder="Adresse de livraison ${stopCount}" value="${value}">
-                    <i class="fa-solid fa-box-archive absolute left-3 top-3 text-slate-300 text-xs"></i>
-                </div>
-                <button type="button" class="remove-stop-btn text-slate-300 hover:text-rose-500 p-2 transition">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            `;
+        <div style="text-align: center; margin-top: 20px;">
+            <p style="font-size: 0.85rem; color: #64748b;">Scannez ce QR Code avec le téléphone du livreur :</p>
+            <div id="qrcode"></div>
+        </div>
+    </div>
+</div>
 
-            // Supprimer une adresse
-            div.querySelector('.remove-stop-btn').addEventListener('click', () => {
-                div.remove();
-                stopCount--;
-                updateStopNumbers();
-            });
+<script>
+    let autocompleteTimeout;
 
-            stopsContainer.appendChild(div);
+    // --- Autocomplétion d'adresses (Nominatim / OpenStreetMap) ---
+    function handleAutocomplete(inputElement) {
+        clearTimeout(autocompleteTimeout);
+        const container = inputElement.parentElement.classList.contains('input-row') 
+            ? inputElement.parentElement.parentElement 
+            : inputElement.parentElement;
+        const listDiv = container.querySelector('.suggestions-list');
+        const query = inputElement.value.trim();
+
+        if (query.length < 3) {
+            listDiv.innerHTML = '';
+            return;
         }
 
-        // Mettre à jour la numérotation des champs
-        function updateStopNumbers() {
-            stopCountSpan.textContent = stopCount;
-            const items = stopsContainer.querySelectorAll('.stop-item');
-            items.forEach((item, index) => {
-                item.querySelector('span').textContent = index + 1;
-                item.querySelector('.stop-address').placeholder = `Adresse de livraison ${index + 1}`;
-            });
-        }
-
-        addStopBtn.addEventListener('click', () => addStopInput());
-
-        clearAllBtn.addEventListener('click', () => {
-            stopsContainer.innerHTML = '';
-            stopCount = 0;
-            updateStopNumbers();
-        });
-
-        // ------------------------------------------------------------------
-        // LOGIQUE D'OPTIMISATION & GEOCATAGE (OPENSTREETMAP / NOMINATIM + ALGORITHME DE PROXIMITÉ)
-        // ------------------------------------------------------------------
-
-        calculateBtn.addEventListener('click', async () => {
-            const startAddr = document.getElementById('start-address').value.trim();
-            const isReturn = returnToStartCheckbox.checked;
-            const endAddr = isReturn ? startAddr : document.getElementById('end-address').value.trim();
-
-            const stopInputs = document.querySelectorAll('.stop-address');
-            const stops = Array.from(stopInputs).map(input => input.value.trim()).filter(val => val !== '');
-
-            if (!startAddr) {
-                showAlert("Adresse manquante", "Veuillez entrer une adresse de départ.");
-                return;
-            }
-
-            if (stops.length === 0) {
-                showAlert("Aucune livraison", "Veuillez ajouter au moins une adresse de livraison.");
-                return;
-            }
-
-            if (!isReturn && !endAddr) {
-                showAlert("Adresse manquante", "Veuillez préciser la destination finale.");
-                return;
-            }
-
-            // Basculer vers l'état de chargement
-            emptyState.classList.add('hidden');
-            resultState.classList.add('hidden');
-            loaderState.classList.remove('hidden');
-
+        autocompleteTimeout = setTimeout(async () => {
             try {
-                // 1. Géocodage de toutes les adresses via OpenStreetMap Nominatim
-                const allAddresses = [startAddr, ...stops];
-                if (!isReturn) allAddresses.push(endAddr);
-
-                const coords = await Promise.all(allAddresses.map(addr => geocodeAddress(addr)));
-
-                const startCoord = coords[0];
-                let endCoord = isReturn ? startCoord : coords[coords.length - 1];
-                let intermediateCoords = isReturn ? coords.slice(1) : coords.slice(1, coords.length - 1);
-
-                // 2. Algorithme d'optimisation (Plus proche voisin / Nearest Neighbor TSP)
-                const orderedStops = optimizeRouteNearestNeighbor(startCoord, intermediateCoords, endCoord);
-
-                // 3. Construction de la liste ordonnée finale pour l'affichage et Google Maps
-                const finalOrder = [startCoord, ...orderedStops];
-                if (!isReturn) finalOrder.push(endCoord);
-                else finalOrder.push({ ...startCoord, address: `${startCoord.address} (Retour)` });
-
-                // 4. Générer le lien Google Maps
-                const mapsUrl = buildGoogleMapsUrl(startAddr, orderedStops.map(s => s.address), isReturn ? startAddr : endAddr);
-
-                // 5. Mettre à jour le DOM
-                renderResults(finalOrder, mapsUrl);
-
-            } catch (err) {
-                showAlert("Erreur de calcul", "Impossible d'optimiser la route. Assurez-vous que les adresses sont valides.");
-                console.error(err);
-                emptyState.classList.remove('hidden');
-            } finally {
-                loaderState.classList.add('hidden');
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&countrycodes=ca`);
+                const data = await res.json();
+                listDiv.innerHTML = '';
+                
+                data.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'suggestion-item';
+                    div.innerText = item.display_name;
+                    div.onclick = () => {
+                        inputElement.value = item.display_name;
+                        listDiv.innerHTML = '';
+                    };
+                    listDiv.appendChild(div);
+                });
+            } catch (e) {
+                console.error("Erreur autocomplétion:", e);
             }
+        }, 300);
+    }
+
+    // Fermer les suggestions si on clique ailleurs
+    document.addEventListener('click', (e) => {
+        if (!e.target.matches('input[type="text"]')) {
+            document.querySelectorAll('.suggestions-list').forEach(el => el.innerHTML = '');
+        }
+    });
+
+    // --- Gestion des entrées ---
+    function addStopInput(value = '') {
+        const container = document.getElementById('stopsContainer');
+        const div = document.createElement('div');
+        div.className = 'input-group';
+        div.innerHTML = `
+            <div class="input-row">
+                <input type="text" class="stop-input" placeholder="Adresse de livraison" value="${value}" oninput="handleAutocomplete(this)">
+                <button class="btn-danger" onclick="removeStop(this)">✕</button>
+            </div>
+            <div class="suggestions-list"></div>
+        `;
+        container.appendChild(div);
+    }
+
+    function removeStop(btn) {
+        const container = document.getElementById('stopsContainer');
+        if (container.children.length > 1) {
+            btn.closest('.input-group').remove();
+        }
+    }
+
+    function toggleReturnToStart(checkbox) {
+        const endInput = document.getElementById('end');
+        if (checkbox.checked) {
+            endInput.value = document.getElementById('start').value;
+            endInput.disabled = true;
+        } else {
+            endInput.disabled = false;
+        }
+    }
+
+    // --- Géocodage et Routage ---
+    async function geocode(address) {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`);
+        const data = await res.json();
+        if (!data || data.length === 0) throw new Error(`Adresse introuvable : ${address}`);
+        return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon), name: address };
+    }
+
+    async function processRoute() {
+        const startAddr = document.getElementById('start').value.trim();
+        const endAddr = document.getElementById('end').value.trim();
+        const stopInputs = Array.from(document.querySelectorAll('.stop-input')).map(i => i.value.trim()).filter(v => v !== '');
+
+        if (!startAddr || !endAddr || stopInputs.length === 0) {
+            alert("Veuillez remplir le départ, l'arrivée et au moins une adresse de livraison.");
+            return;
+        }
+
+        document.getElementById('loader').style.display = 'block';
+        document.getElementById('results').style.display = 'none';
+
+        try {
+            const allAddresses = [startAddr, ...stopInputs, endAddr];
+            const coords = await Promise.all(allAddresses.map(geocode));
+
+            const osrmCoords = coords.map(c => `${c.lon},${c.lat}`).join(';');
+            const osrmUrl = `https://router.project-osrm.org/trip/v1/driving/${osrmCoords}?source=first&destination=last&roundtrip=false`;
+
+            const routeRes = await fetch(osrmUrl);
+            const routeData = await routeRes.json();
+
+            if (routeData.code !== 'Ok') throw new Error("Impossible d'optimiser le trajet.");
+
+            const waypointOrder = routeData.waypoints.sort((a, b) => a.waypoint_index - b.waypoint_index);
+            const orderedCoords = waypointOrder.map(wp => coords[wp.trips_index]);
+
+            displayResults(orderedCoords, routeData.trips[0]);
+            autoSaveRoute(startAddr, endAddr, stopInputs);
+        } catch (err) {
+            alert("Erreur : " + err.message);
+        } finally {
+            document.getElementById('loader').style.display = 'none';
+        }
+    }
+
+    function displayResults(orderedPoints, tripData) {
+        const listEl = document.getElementById('orderedList');
+        listEl.innerHTML = '';
+
+        orderedPoints.forEach((pt, index) => {
+            const li = document.createElement('li');
+            li.className = 'waypoint-item';
+            let label = index === 0 ? 'Départ' : (index === orderedPoints.length - 1 ? 'Arrivée' : `Arrêt ${index}`);
+            li.innerHTML = `<span class="badge">${index + 1}</span> <strong>${label}:</strong> ${pt.name}`;
+            listEl.appendChild(li);
         });
 
-        // Fonction de géocodage gratuite (Nominatim)
-        async function geocodeAddress(address) {
-            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`);
-            const data = await response.json();
-            if (data && data.length > 0) {
-                return {
-                    address: address,
-                    lat: parseFloat(data[0].lat),
-                    lon: parseFloat(data[0].lon)
-                };
-            }
-            // Fallback fictif en cas d'échec du géocodage strict pour ne pas bloquer l'interface
-            return {
-                address: address,
-                lat: 45.5017 + (Math.random() - 0.5) * 0.1,
-                lon: -73.5673 + (Math.random() - 0.5) * 0.1
-            };
+        const distKm = (tripData.distance / 1000).toFixed(1);
+        const durationMin = Math.round(tripData.duration / 60);
+        document.getElementById('routeMeta').innerText = `Distance approx. : ${distKm} km | Temps estimé : ${durationMin} min`;
+
+        const origin = encodeURIComponent(orderedPoints[0].name);
+        const destination = encodeURIComponent(orderedPoints[orderedPoints.length - 1].name);
+        const waypoints = orderedPoints.slice(1, -1).map(p => encodeURIComponent(p.name)).join('|');
+        const gmapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&waypoints=${waypoints}&travelmode=driving`;
+
+        document.getElementById('gmapsLink').href = gmapsUrl;
+
+        document.getElementById('qrcode').innerHTML = '';
+        new QRCode(document.getElementById("qrcode"), {
+            text: gmapsUrl,
+            width: 160,
+            height: 160
+        });
+
+        document.getElementById('results').style.display = 'block';
+    }
+
+    // --- Historique (LocalStorage) ---
+    function getSavedRoutes() {
+        return JSON.parse(localStorage.getItem('routes_history') || '[]');
+    }
+
+    function updateHistoryDropdown() {
+        const select = document.getElementById('historySelect');
+        select.innerHTML = '<option value="">-- Sélectionner une route enregistrée --</option>';
+        const routes = getSavedRoutes();
+        routes.forEach((r, idx) => {
+            const opt = document.createElement('option');
+            opt.value = idx;
+            opt.innerText = `${r.name} (${r.stops.length} livraisons)`;
+            select.appendChild(opt);
+        });
+    }
+
+    function saveCurrentRoutePrompt() {
+        const start = document.getElementById('start').value.trim();
+        const end = document.getElementById('end').value.trim();
+        const stops = Array.from(document.querySelectorAll('.stop-input')).map(i => i.value.trim()).filter(v => v !== '');
+
+        if (!start || stops.length === 0) {
+            alert("Remplissez au moins le point de départ et une adresse à sauvegarder.");
+            return;
         }
 
-        // Algorithme du plus proche voisin pour trier les étapes au plus court (Euclidien/Haversine)
-        function optimizeRouteNearestNeighbor(start, points, end) {
-            let unvisited = [...points];
-            let current = start;
-            let result = [];
+        const name = prompt("Donnez un nom à cette route :", `Route du ${new Date().toLocaleDateString()}`);
+        if (!name) return;
 
-            while (unvisited.length > 0) {
-                let nearestIdx = 0;
-                let minDistance = calculateDistance(current, unvisited[0]);
+        const routes = getSavedRoutes();
+        routes.unshift({ name, start, end, stops });
+        localStorage.setItem('routes_history', JSON.stringify(routes.slice(0, 20))); // Max 20
+        updateHistoryDropdown();
+        alert("Route sauvegardée !");
+    }
 
-                for (let i = 1; i < unvisited.length; i++) {
-                    let dist = calculateDistance(current, unvisited[i]);
-                    if (dist < minDistance) {
-                        minDistance = dist;
-                        nearestIdx = i;
-                    }
-                }
+    function autoSaveRoute(start, end, stops) {
+        const routes = getSavedRoutes();
+        const name = `Dernière route (${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})})`;
+        routes.unshift({ name, start, end, stops });
+        localStorage.setItem('routes_history', JSON.stringify(routes.slice(0, 15)));
+        updateHistoryDropdown();
+    }
 
-                current = unvisited[nearestIdx];
-                result.push(current);
-                unvisited.splice(nearestIdx, 1);
-            }
+    function loadSelectedRoute() {
+        const idx = document.getElementById('historySelect').value;
+        if (idx === "") return;
 
-            return result;
+        const route = getSavedRoutes()[idx];
+        if (!route) return;
+
+        document.getElementById('start').value = route.start;
+        document.getElementById('end').value = route.end;
+
+        const container = document.getElementById('stopsContainer');
+        container.innerHTML = '';
+        route.stops.forEach(s => addStopInput(s));
+    }
+
+    function clearHistory() {
+        if (confirm("Voulez-vous supprimer tout l'historique des routes ?")) {
+            localStorage.removeItem('routes_history');
+            updateHistoryDropdown();
         }
+    }
 
-        // Calcul de la distance d'orthodromie (Haversine)
-        function calculateDistance(coord1, coord2) {
-            const R = 6371; // Rayon de la Terre en km
-            const dLat = (coord2.lat - coord1.lat) * Math.PI / 180;
-            const dLon = (coord2.lon - coord1.lon) * Math.PI / 180;
-            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                      Math.cos(coord1.lat * Math.PI / 180) * Math.cos(coord2.lat * Math.PI / 180) *
-                      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            return R * c;
-        }
+    // Charger l'historique au démarrage
+    updateHistoryDropdown();
+</script>
 
-        // Génération de l'URL Google Maps Universelle
-        function buildGoogleMapsUrl(origin, waypoints, destination) {
-            const baseUrl = "https://www.google.com/maps/dir/?api=1";
-            const originParam = `&origin=${encodeURIComponent(origin)}`;
-            const destParam = `&destination=${encodeURIComponent(destination)}`;
-            
-            let waypointsParam = "";
-            if (waypoints.length > 0) {
-                waypointsParam = `&waypoints=${waypoints.map(w => encodeURIComponent(w)).join('|')}`;
-            }
-
-            return `${baseUrl}${originParam}${destParam}${waypointsParam}`;
-        }
-
-        // Affichage des résultats et génération du QR Code
-        function renderResults(orderedList, mapsUrl) {
-            optimizedList.innerHTML = '';
-
-            orderedList.forEach((item, index) => {
-                const li = document.createElement('li');
-                li.className = "relative mb-3 flex items-start space-x-3";
-
-                let badgeColor = "bg-slate-200 text-slate-700";
-                let label = `Arrêt ${index}`;
-
-                if (index === 0) {
-                    badgeColor = "bg-emerald-100 text-emerald-700 font-bold";
-                    label = "DÉPART";
-                } else if (index === orderedList.length - 1) {
-                    badgeColor = "bg-rose-100 text-rose-700 font-bold";
-                    label = "ARRIVÉE";
-                }
-
-                li.innerHTML = `
-                    <span class="inline-flex items-center justify-center px-2 py-0.5 rounded text-[10px] ${badgeColor} tracking-wide shrink-0 mt-0.5">
-                        ${label}
-                    </span>
-                    <span class="text-xs text-slate-700 font-medium break-words">${item.address}</span>
-                `;
-                optimizedList.appendChild(li);
-            });
-
-            totalStopsSummary.textContent = `${orderedList.length - 2} Livraison(s) Optimisée(s)`;
-            googleMapsLink.href = mapsUrl;
-
-            // Génération du QR Code
-            const qrContainer = document.getElementById("qrcode");
-            qrContainer.innerHTML = '';
-            new QRCode(qrContainer, {
-                text: mapsUrl,
-                width: 140,
-                height: 140,
-                colorDark: "#1e1b4b",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.M
-            });
-
-            resultState.classList.remove('hidden');
-        }
-
-        // Helper Modal Alert
-        function showAlert(title, message) {
-            document.getElementById('alert-title').textContent = title;
-            document.getElementById('alert-message').textContent = message;
-            document.getElementById('alert-modal').classList.remove('hidden');
-        }
-
-        function closeAlert() {
-            document.getElementById('alert-modal').classList.add('hidden');
-        }
-    </script>
 </body>
 </html>
