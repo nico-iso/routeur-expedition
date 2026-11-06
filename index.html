@@ -194,14 +194,14 @@
             }
         }
 
-        async function geocode(address) {
+        async function geocode(address, labelName) {
             const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${MAPBOX_KEY}&country=ca&limit=1`);
             const data = await res.json();
             if (!data || !data.features || data.features.length === 0) {
                 throw new Error(`Adresse introuvable : ${address}`);
             }
             const center = data.features[0].center; // [lon, lat]
-            return { lat: center[1], lon: center[0], name: address };
+            return { lat: center[1], lon: center[0], name: labelName };
         }
 
         async function processRoute() {
@@ -218,15 +218,14 @@
             document.getElementById('results').classList.add('hidden');
 
             try {
-                const startCoord = await geocode(startAddr);
-                const endCoord = await geocode(endAddr);
-                const stopCoords = await Promise.all(stopInputs.map(geocode));
+                const startCoord = await geocode(startAddr, startAddr);
+                const endCoord = await geocode(endAddr, endAddr);
+                const stopCoords = await Promise.all(stopInputs.map(addr => geocode(addr, addr)));
 
                 let orderedCoords = [];
                 let tripData = null;
 
                 if (stopCoords.length === 1) {
-                    // S'il n'y a qu'un seul arrêt, ordre direct sans TSP
                     orderedCoords = [startCoord, stopCoords[0], endCoord];
                     const coordsStr = `${startCoord.lon},${startCoord.lat};${stopCoords[0].lon},${stopCoords[0].lat};${endCoord.lon},${endCoord.lat}`;
                     const routeRes = await fetch(`https://router.project-osrm.org/route/v1/driving/${coordsStr}?overview=false`);
@@ -234,7 +233,6 @@
                     if (routeData.code !== 'Ok') throw new Error("Impossible de calculer l'itinéraire.");
                     tripData = routeData.routes[0];
                 } else {
-                    // S'il y a 2 arrêts ou plus, optimisation complète (TSP)
                     const allCoords = [startCoord, ...stopCoords, endCoord];
                     const osrmCoords = allCoords.map(c => `${c.lon},${c.lat}`).join(';');
                     const osrmUrl = `https://router.project-osrm.org/trip/v1/driving/${osrmCoords}?source=first&destination=last&roundtrip=false`;
