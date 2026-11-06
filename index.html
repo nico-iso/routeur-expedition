@@ -194,23 +194,26 @@
             }
         }
 
-        async function geocode(address, labelName) {
+        async function geocode(address) {
             const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${MAPBOX_KEY}&country=ca&limit=1`);
             const data = await res.json();
             if (!data || !data.features || data.features.length === 0) {
                 throw new Error(`Adresse introuvable : ${address}`);
             }
             const center = data.features[0].center; // [lon, lat]
-            return { lat: center[1], lon: center[0], name: labelName };
+            return { lat: center[1], lon: center[0], name: address };
         }
 
         async function processRoute() {
             const startAddr = document.getElementById('start').value.trim();
             const endAddr = document.getElementById('end').value.trim();
-            const stopInputs = Array.from(document.querySelectorAll('.stop-input')).map(i => i.value.trim()).filter(v => v !== '');
+            
+            const stopInputs = Array.from(document.querySelectorAll('.stop-input'))
+                .map(i => i.value.trim())
+                .filter(v => v !== '');
 
             if (!startAddr || !endAddr || stopInputs.length === 0) {
-                alert("Veuillez remplir le départ, l'arrivée et au moins une adresse de livraison.");
+                alert("Veuillez remplir le départ, l'arrivée et au moins une adresse de livraison valide.");
                 return;
             }
 
@@ -218,9 +221,9 @@
             document.getElementById('results').classList.add('hidden');
 
             try {
-                const startCoord = await geocode(startAddr, startAddr);
-                const endCoord = await geocode(endAddr, endAddr);
-                const stopCoords = await Promise.all(stopInputs.map(addr => geocode(addr, addr)));
+                const startCoord = await geocode(startAddr);
+                const endCoord = await geocode(endAddr);
+                const stopCoords = await Promise.all(stopInputs.map(geocode));
 
                 let orderedCoords = [];
                 let tripData = null;
@@ -233,8 +236,9 @@
                     if (routeData.code !== 'Ok') throw new Error("Impossible de calculer l'itinéraire.");
                     tripData = routeData.routes[0];
                 } else {
-                    const allCoords = [startCoord, ...stopCoords, endCoord];
-                    const osrmCoords = allCoords.map(c => `${c.lon},${c.lat}`).join(';');
+                    // Pour éviter que l'API /trip mélange les index, on envoie les points et on utilise les métadonnées de la réponse de manière sécure
+                    const allPoints = [startCoord, ...stopCoords, endCoord];
+                    const osrmCoords = allPoints.map(c => `${c.lon},${c.lat}`).join(';');
                     const osrmUrl = `https://router.project-osrm.org/trip/v1/driving/${osrmCoords}?source=first&destination=last&roundtrip=false`;
 
                     const routeRes = await fetch(osrmUrl);
@@ -242,8 +246,11 @@
 
                     if (routeData.code !== 'Ok') throw new Error("Impossible d'optimiser le trajet.");
 
-                    const waypointOrder = routeData.waypoints.sort((a, b) => a.waypoint_index - b.waypoint_index);
-                    orderedCoords = waypointOrder.map(wp => allCoords[wp.trips_index]);
+                    // Reconstruction propre basée sur les indices de voyage retournés par OSRM
+                    orderedCoords = routeData.waypoints
+                        .sort((a, b) => a.waypoint_index - b.waypoint_index)
+                        .map(wp => allPoints[wp.trips_index]);
+
                     tripData = routeData.trips[0];
                 }
 
@@ -330,6 +337,7 @@
             updateHistoryDropdown();
         }
 
+    
         function autoSaveRoute(start, end, stops) {
             const routes = getSavedRoutes();
             const name = `Dernière route (${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})})`;
