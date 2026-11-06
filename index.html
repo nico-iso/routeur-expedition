@@ -195,10 +195,24 @@
         }
 
         async function geocode(address) {
-            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`);
-            const data = await res.json();
-            if (!data || data.length === 0) throw new Error(`Adresse introuvable : ${address}`);
-            return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon), name: address };
+            // 1ère tentative : recherche exacte avec l'adresse complète
+            let res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`);
+            let data = await res.json();
+            
+            if (data && data.length > 0) {
+                return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon), name: address };
+            }
+
+            // 2e tentative de secours : on enlève le code postal et on élargit pour éviter le blocage
+            const cleanedAddress = address.replace(/[A-Z]\d[A-Z]\s?\d[A-Z]\d/gi, '').split(',')[0] + ", Thetford Mines, QC";
+            res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cleanedAddress)}&limit=1`);
+            data = await res.json();
+
+            if (data && data.length > 0) {
+                return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon), name: address };
+            }
+
+            throw new Error(`Adresse introuvable : ${address}`);
         }
 
         async function processRoute() {
